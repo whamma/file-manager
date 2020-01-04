@@ -1,9 +1,9 @@
 const ftp = require('basic-ftp');
-const logger = require('electron-log');
+import logger from 'electron-log';
 
 const client = new ftp.Client(10000);
 
-const uploadFtp = async ({ host, port, user, password, src, dest, progressCallback }) => {
+export const uploadFtp = async ({ host, port, user, password, src, dest, progressCallback }) => {
   const result = {
     success: false,
     errors: null,
@@ -42,5 +42,3 @@ const uploadFtp = async ({ host, port, user, password, src, dest, progressCallba
   client.close();
   return result;
 };
-
-module.exports = { uploadFtp, client };

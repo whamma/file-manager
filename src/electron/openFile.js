@@ -1,6 +1,6 @@
-const { dialog } = require('electron');
+import { dialog } from 'electron';
 
-const openFile = async ({ ownerWin, defaultPath }) => {
+export const openFile = async ({ ownerWin, defaultPath }) => {
   const options = {
     // See place holder 1 in above image
     title: '파일 선택',
@@ -19,5 +19,3 @@ const openFile = async ({ ownerWin, defaultPath }) => {
   const result = await dialog.showOpenDialog(ownerWin, options);
   return result;
 };
-
-module.exports = { openFile };

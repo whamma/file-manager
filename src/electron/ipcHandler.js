@@ -1,16 +1,15 @@
-const { channels } = require('../shared/constants');
-const { openFile } = require('./openFile');
-const { uploadFtp, client } = require('./transfer');
-const logger = require('electron-log');
-
-const path = require('path');
-const fs = require('fs');
-const util = require('util');
-const uuidv4 = require('uuid/v4');
+import { channels } from '../shared/constants';
+import { openFile } from './openFile';
+import { uploadFtp } from './transfer';
+import logger from 'electron-log';
+import path from 'path';
+import fs from 'fs';
+import util from 'util';
+import uuidv4 from 'uuid/v4';
 
 const statPromise = util.promisify(fs.stat);
 
-const configure = ({ ipcMain, app, win }) => {
+export const configure = ({ ipcMain, app, win }) => {
   /**
    * 업로드 파일 선택
    */
@@ -19,23 +18,18 @@ const configure = ({ ipcMain, app, win }) => {
       ownerWin: win,
       defaultPath: app.getPath('documents'),
     });
-
     if (result.canceled) {
       return;
     }
-
     const filePath = result.filePaths[0];
-
     // 파일 정보 구하기
     const fileInfo = await statPromise(filePath);
-
     event.sender.send(channels.FILE_OPEN, {
       filePath,
       fileSize: fileInfo.size,
       fileName: path.basename(filePath),
     });
   });
-
   /**
    * 파일 전송
    */
@@ -46,7 +40,6 @@ const configure = ({ ipcMain, app, win }) => {
     const basename = path.basename(file.fileName, ext);
     file.destFileName = `${basename}_${uuidv4()}${ext}`;
     const dest = path.join(file.server.path, `${file.destFileName}`).replace(/\\/gi, '/');
-
     logger.debug('file', file);
     const result = await uploadFtp({
       host,
@@ -61,7 +54,6 @@ const configure = ({ ipcMain, app, win }) => {
         event.sender.send(channels.TRANSFER_FILE, file);
       },
     });
-
     if (result.success) {
       file.status = 'done';
     } else {
@@ -71,5 +63,3 @@ const configure = ({ ipcMain, app, win }) => {
     event.sender.send(channels.TRANSFER_FILE, file);
   });
 };
-
-module.exports = { configure };
