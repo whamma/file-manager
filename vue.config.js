@@ -2,7 +2,6 @@ module.exports = {
   transpileDependencies: ['vuetify'],
   pluginOptions: {
     electronBuilder: {
-      mainProcessArgs: ['--job-id=261'],
       builderOptions: {
         appId: 'com.gemiso.file-manager',
         productName: 'File Manager',

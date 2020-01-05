@@ -1,19 +1,24 @@
 'use strict';
 
-import { app, protocol, BrowserWindow, ipcMain } from 'electron';
-import { createProtocol } from 'vue-cli-plugin-electron-builder/lib';
+import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
+import { createProtocol, installVueDevtools } from 'vue-cli-plugin-electron-builder/lib';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
 import logger from 'electron-log';
 Object.assign(console, logger.functions);
 
-import { configure } from './electron/ipcHandler';
+import { configure } from './electron/ipc-handler';
+import { getQueryParamsFromArgs } from './electron/process-args';
+import { channels } from './shared/constants';
+
+const os = require('os');
 
 const PROTOCOL = 'gemiso.file-manager';
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
+let webContentsLoaded = false;
 
 configure({ ipcMain, app, win });
 
@@ -23,8 +28,10 @@ if (!appLock) {
   app.quit();
   app.exit();
 } else {
-  app.on('second-instance', (event, argv, workingDir) => {
+  // 앱이 실행되어 있는 상태에서 다시 실행될때
+  app.on('second-instance', (event, argv) => {
     console.log(`second-instance : ${JSON.stringify(argv)}`);
+    processJob(argv);
     if (win) {
       win.restore();
       win.focus();
@@ -92,21 +99,34 @@ app.on('ready', async () => {
     // Electron will not launch with Devtools extensions installed on Windows 10 with dark mode
     // If you are not using Windows 10 dark mode, you may uncomment these lines
     // In addition, if the linked issue is closed, you can upgrade electron and uncomment these lines
-    // try {
-    //   await installVueDevtools()
-    // } catch (e) {
-    //   console.error('Vue Devtools failed to install:', e.toString())
-    // }
+    try {
+      await installVueDevtools();
+    } catch (e) {
+      console.error('Vue Devtools failed to install:', e.toString());
+    }
   }
 
-  const mockArgs = 'gemiso.proxima-fs://?job_id=10';
+  console.log('process.argv', process.argv);
+  console.log('isDevelopment', isDevelopment);
+  let args = process.argv;
+  if (isDevelopment) {
+    // 업로드
+    args.push(`${PROTOCOL}://?job_id=321`);
+    // 다운로드
+    //args.push(`${PROTOCOL}://?job_id=341`);
+  }
+  console.log('args', args);
 
+  // 기본 프로토콜 설정
   if (!isDevelopment && !app.isDefaultProtocolClient(PROTOCOL)) {
     const filePath = app.getPath('exe');
     console.log(`filePath: ${filePath}`);
     app.setAsDefaultProtocolClient(PROTOCOL, filePath);
   }
+
   createWindow();
+
+  processJob(args);
 });
 
 // Exit cleanly on request from parent process in development mode.
@@ -120,6 +140,37 @@ if (isDevelopment) {
   } else {
     process.on('SIGTERM', () => {
       app.quit();
+    });
+  }
+}
+
+async function processJob(args) {
+  // argv 처리
+  const queryParams = getQueryParamsFromArgs(args, PROTOCOL);
+  console.log('queryParams', queryParams);
+  if (queryParams) {
+    const jobId = queryParams['job_id'];
+    console.log('webContentsLoaded', webContentsLoaded);
+    if (webContentsLoaded) {
+      console.log('before send add_job');
+      win.webContents.send(channels.ADD_JOB, {
+        jobId,
+      });
+    } else {
+      win.webContents.on('did-finish-load', () => {
+        webContentsLoaded = true;
+        console.log(`Before send add_job.(jobId : ${jobId})`);
+        win.webContents.send(channels.ADD_JOB, {
+          jobId,
+          downloadDir: app.getPath('downloads'),
+          appVersion: app.getVersion(),
+          os: `${os.platform()}-${os.release()}(${os.arch()})}`,
+        });
+      });
+    }
+  } else {
+    dialog.showMessageBox(null, {
+      message: '작업 정보가 누락되었습니다.',
     });
   }
 }

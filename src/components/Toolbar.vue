@@ -1,20 +1,28 @@
 <template>
-  <v-toolbar>
-    <!-- 테스트 버튼 -->
-    <v-btn color="primary" class="mr-4" @click="onClickUpload">
-      <v-icon left>mdi-file-upload</v-icon>
-      <span>테스트</span>
-    </v-btn>
-    <!-- 시작 버튼 -->
-    <v-btn color="success" :disabled="startable" @click="onClickStart">
-      <v-icon left>mdi-play</v-icon>
-      <span>시작</span>
-    </v-btn>
-  </v-toolbar>
+  <div>
+    <v-app-bar app>
+      <v-btn color="primary" class="mr-4" @click="onTest">
+        <span>테스트</span>
+      </v-btn>
+      <v-btn color="primary" class="mr-4" @click="onTest2">
+        <span>테스트2</span>
+      </v-btn>
+      <v-btn color="primary" class="mr-4" @click="onTest3">
+        <span>테스트3</span>
+      </v-btn>
+      <!-- 시작 버튼 -->
+      <v-btn color="success" :disabled="startable" @click="onClickStart">
+        <v-icon left>mdi-play</v-icon>
+        <span>시작</span>
+      </v-btn>
+    </v-app-bar>
+  </div>
 </template>
 
 <script>
 import { channels } from '@/shared/constants';
+import { is404 } from '@/utils/response';
+import path from 'path';
 
 let ipcRenderer = null;
 if (typeof window.require === 'function') {
@@ -31,34 +39,115 @@ export default {
   data() {
     return {
       working: false,
+      lastStatusUpdated: null,
     };
   },
   computed: {
     startable() {
       return this.working || !this.selectTransferFile();
     },
+    appVersion() {
+      return this.$store.state.config.appVersion;
+    },
+    os() {
+      return this.$store.state.config.os;
+    },
+    downloadDir() {
+      return this.$store.state.config.downloadDir;
+    },
   },
   methods: {
+    error(message) {
+      this.setAlert({ type: 'error', message });
+    },
+    success(message) {
+      this.setAlert({ type: 'success', message });
+    },
+    setAlert({ type, message }) {
+      this.$emit('alert', {
+        type,
+        message,
+      });
+    },
+    async getJob(jobId) {
+      try {
+        const res = await this.$http.get(`/file-server/jobs/${jobId}`);
+        return res.data.data;
+      } catch (error) {
+        console.log('error in getJob', error);
+        if (is404(error)) {
+          this.error(`작업을 서버에서 찾을 수 없습니다. (${jobId})`);
+        }
+      }
+    },
     listenIpcEvents() {
+      ipcRenderer.on(channels.ADD_JOB, async (event, jobInfo) => {
+        console.log('event', event);
+        console.log('jobInfo', jobInfo);
+        if (!jobInfo.jobId) {
+          console.log('jobId is empty.');
+          return;
+        }
+        // 1. 서버에서 작업을 조회한 후
+        const job = await this.getJob(jobInfo.jobId);
+        const file = {
+          jobId: job.id,
+          type: job.type,
+        };
+        console.log('job', job);
+        const config = {
+          downloadDir: jobInfo.downloadDir,
+          appVersion: jobInfo.appVersion,
+          os: jobInfo.os,
+        };
+        console.log('befor setConfig', config);
+        this.$store.dispatch('setConfig', config);
+
+        if (job.type === 'download') {
+          // 다운로드 작업이면 파일정보를 추가로 입력한다.
+          const fileName = path.basename(job.file_path);
+          file.fileName = fileName;
+          file.remoteFileName = job.file_path;
+          file.fileSize = parseInt(job.filesize);
+          file.downloadDir = config.downloadDir;
+          file.status = job.status;
+        }
+        this.$store.dispatch('addFile', file);
+        const addedFile = this.findFile(job.id);
+        console.log('addedFile', addedFile);
+
+        // 2. 업로드 작업이면 파일 선택 팝업을 띄움.
+        if (job.type === 'upload') {
+          ipcRenderer.send(channels.FILE_OPEN, addedFile);
+        }
+      });
+
       // 파일 열고 난 후
       ipcRenderer.on(channels.FILE_OPEN, (event, file) => {
-        file.type = 'upload';
-        this.$store.dispatch('addFile', file);
+        console.log('after file open :', file);
+        file.status = 'standby';
+        this.$store.dispatch('updateFile', file);
       });
 
       // 파일 전송 시
-      ipcRenderer.on(channels.TRANSFER_FILE, (event, file) => {
+      ipcRenderer.on(channels.TRANSFER_FILE, async (event, file) => {
         file.progress = Math.round((file.transferred / file.fileSize) * 100);
         this.$store.dispatch('updateFile', file);
 
-        if (file.status === 'done') {
+        if (file.status === 'finished') {
+          this.updateProgress(file);
           this.onClickStart();
         } else if (file.status === 'error') {
+          this.working = false;
+          this.error(file.errors);
           console.log(file.errors);
+          this.updateProgress(file);
+        } else {
+          this.updateProgress(file);
         }
       });
     },
-    async onClickUpload() {
+    async onTest() {
       //ipcRenderer.send(channels.FILE_OPEN);
       // 업로드 작업 생성
       try {
@@ -68,34 +157,122 @@ export default {
         const job = {
           type: 'upload',
         };
-        const res = await this.$axios.post('/file-server/jobs', job, { headers });
+        const res = await this.$http.post('/file-server/jobs', job, { headers });
         console.log(res);
       } catch (error) {
         console.log(error);
       }
     },
-    onClickStart() {
+    async onTest2() {
+      await this.getJob('321');
+    },
+    async onTest3() {
+      let file = this.$store.state.files[0];
+      for (let i = 0; i < 10; i++) {
+        file.jobId = 1000 + i;
+        console.log(file.jobId);
+        this.$store.dispatch('addFile', file);
+      }
+    },
+    async onClickStart() {
       this.working = true;
+      // 1. 대기중인 파일을 선택
+      // 2. 전송작업 할당 api 호출
+      // 3. 할당된 서버로 전송
       const selectedFile = this.selectTransferFile();
       if (!selectedFile) {
         this.working = false;
         return;
       }
 
+      console.log(selectedFile);
+
+      if (!selectedFile.jobId) {
+        alert('작업아이디가 유효하지 않습니다.');
+        this.working = false;
+        return;
+      }
+
+      const job = await this.assignJob(selectedFile.jobId);
+      console.log(job);
+
+      if (!job.file_server) {
+        alert('파일서버 정보가 유효하지 않습니다.');
+        return;
+      }
+
+      const fileServer = job.file_server;
       const server = {
-        host: '192.168.142.1',
-        port: 2121,
-        user: 'upload',
-        password: 'xhdqkd!@#$%',
-        path: '/upload',
+        host: fileServer.host,
+        port: fileServer.port,
+        user: fileServer.username,
+        password: fileServer.pw,
+        remoteDir: fileServer.remote_dir,
       };
 
       selectedFile.server = server;
 
       ipcRenderer.send(channels.TRANSFER_FILE, selectedFile);
     },
+    findFile(jobId) {
+      return this.$store.state.files.find(file => file.jobId === jobId);
+    },
     selectTransferFile() {
-      return this.$store.state.files.find(file => file.status === 'queued');
+      // 준비완료 된 파일만 전송 가능
+      return this.$store.state.files.find(file => file.status === 'standby');
+    },
+    async assignJob(jobId) {
+      //작업 할당 시 client_os, client_ver 제공해야 함
+      try {
+        const payload = {
+          client_ver: this.appVersion,
+          client_os: this.os,
+        };
+        console.log('assignJob payload:', payload);
+        const res = await this.$http.post(`/file-server/jobs/${jobId}/assign`, payload);
+        console.log('assignJob response:', res);
+        return res.data.data;
+      } catch (error) {
+        console.log(error);
+        this.error(error.message);
+      }
+    },
+    async updateProgress(file) {
+      try {
+        // 진행중일 땐 5초에 한번씩 업데이트 한다.
+        if (file.status === 'working') {
+          const now = Date.now();
+          if (this.lastStatusUpdated !== null && now - this.lastStatusUpdated < 5000) {
+            return;
+          }
+          this.lastStatusUpdated = now;
+        }
+        const payload = {
+          progress: file.progress,
+          status: file.status,
+          transferred: file.transferred,
+        };
+
+        if (file.type === 'upload') {
+          payload.file_path = file.fileName;
+          payload.filesize = file.filesize;
+        }
+
+        const res = await this.$http.post(`/file-server/jobs/${file.jobId}/update-status`, payload);
+        console.log('updateProgress response:', res);
+      } catch (error) {
+        console.log(error);
+        this.error(error.message);
+      }
+    },
+    retryTransfer() {
+      // if (selectedFile.errors !== null) {
+      //   selectedFile.errors = null;
+      //   selectedFile.progress = 0;
+      //   selectedFile.transferred = 0;
+      //   selectedFile.status = 'standby';
+      //   this.$store.dispatch('updateFile', selectedFile);
+      // }
     },
   },
 };

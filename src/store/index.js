@@ -1,11 +1,9 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
-import uuidv4 from 'uuid/v4';
 
 Vue.use(Vuex);
 
 /*
-  id: uuid,
   jobId: 123,
   filePath: 'd:\\테스트.mp4',
   fileName: '테스트.mp4',
@@ -30,21 +28,27 @@ Vue.use(Vuex);
 export default new Vuex.Store({
   state: {
     files: [],
+    config: {
+      downloadDir: '',
+      appVersion: '',
+      os: '',
+    },
   },
   mutations: {
     addFile(state, payload) {
-      payload.id = uuidv4();
-      payload.status = 'queued';
       payload.progress = 0;
       payload.transferred = 0;
       state.files = [...state.files, payload];
     },
     updateFile(state, payload) {
-      const idx = state.files.findIndex(file => file.id === payload.id);
+      const idx = state.files.findIndex(file => file.jobId === payload.jobId);
       if (idx < 0) {
         return;
       }
       state.files = [...state.files.slice(0, idx), payload, ...state.files.slice(idx + 1)];
+    },
+    setConfig(state, payload) {
+      state.config = { ...payload };
     },
   },
   actions: {
@@ -53,6 +57,9 @@ export default new Vuex.Store({
     },
     updateFile({ commit }, payload) {
       commit('updateFile', payload);
+    },
+    setConfig({ commit }, payload) {
+      commit('setConfig', payload);
     },
   },
   modules: {},

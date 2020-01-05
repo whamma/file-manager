@@ -1,9 +1,11 @@
 <template>
   <div>
-    <toolbar />
-    <v-container>
+    <!-- <v-app-bar app>123</v-app-bar> -->
+    <toolbar @alert="onToolbarAlert" />
+    <v-content>
+      <v-alert class="ma2" v-if="alert.type !== ''" :type="alert.type">{{ alert.message }}</v-alert>
       <file-list />
-    </v-container>
+    </v-content>
   </div>
 </template>
 
@@ -19,8 +21,16 @@ export default {
   },
   data() {
     return {
-      value: 100,
+      alert: {
+        type: '',
+        message: '',
+      },
     };
+  },
+  methods: {
+    onToolbarAlert(alert) {
+      this.alert = alert;
+    },
   },
 };
 </script>

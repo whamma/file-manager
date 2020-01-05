@@ -6,12 +6,12 @@ import vuetify from './plugins/vuetify';
 import axios from 'axios';
 
 const base = axios.create({
-  baseURL: 'http://localhost/api/v1',
+  baseURL: 'https://nps.ktv.go.kr/api/v1',
   timeout: 5000,
   headers: { 'X-API-KEY': 'B+Hqhy*3GEuJJmk%' },
 });
 
-Vue.prototype.$axios = base;
+Vue.prototype.$http = base;
 
 Vue.config.productionTip = false;
 
