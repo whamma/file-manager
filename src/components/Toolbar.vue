@@ -1,19 +1,28 @@
 <template>
   <div>
     <v-app-bar app>
-      <v-btn color="primary" class="mr-4" @click="onTest">
+      <!-- <v-btn v-if="isDevelopment" color="primary" class="mr-4" @click="onTest">
         <span>테스트</span>
       </v-btn>
-      <v-btn color="primary" class="mr-4" @click="onTest2">
+      <v-btn v-if="isDevelopment" color="primary" class="mr-4" @click="onTest2">
         <span>테스트2</span>
       </v-btn>
-      <v-btn color="primary" class="mr-4" @click="onTest3">
+      <v-btn v-if="isDevelopment" color="primary" class="mr-4" @click="onTest3">
         <span>테스트3</span>
-      </v-btn>
+      </v-btn> -->
       <!-- 시작 버튼 -->
-      <v-btn color="success" :disabled="startable" @click="onClickStart">
+      <v-btn color="success" :disabled="startable" class="mr-4" @click="onClickStart">
         <v-icon left>mdi-play</v-icon>
         <span>시작</span>
+      </v-btn>
+      <!-- 중지 버튼 -->
+      <v-btn color="error" :disabled="stopable" @click="onClickStop">
+        <v-icon left>mdi-stop</v-icon>
+        <span>중지</span>
+      </v-btn>
+      <v-spacer></v-spacer>
+      <v-btn icon @click="onClickConfig">
+        <v-icon>mdi-settings</v-icon>
       </v-btn>
     </v-app-bar>
   </div>
@@ -23,6 +32,7 @@
 import { channels } from '@/shared/constants';
 import { is404 } from '@/utils/response';
 import path from 'path';
+import { EventBus } from '@/utils/event-bus';
 
 let ipcRenderer = null;
 if (typeof window.require === 'function') {
@@ -35,6 +45,10 @@ export default {
     if (ipcRenderer) {
       this.listenIpcEvents();
     }
+    EventBus.$on('open-file', file => {
+      console.log('$on.open-file', file);
+      ipcRenderer.send(channels.FILE_OPEN, file);
+    });
   },
   data() {
     return {
@@ -46,11 +60,17 @@ export default {
     startable() {
       return this.working || !this.selectTransferFile();
     },
+    stopable() {
+      return !this.working;
+    },
     appVersion() {
       return this.$store.state.config.appVersion;
     },
     os() {
       return this.$store.state.config.os;
+    },
+    isDevelopment() {
+      return this.$store.state.config.isDevelopment;
     },
     downloadDir() {
       return this.$store.state.config.downloadDir;
@@ -99,6 +119,7 @@ export default {
           downloadDir: jobInfo.downloadDir,
           appVersion: jobInfo.appVersion,
           os: jobInfo.os,
+          isDevelopment: jobInfo.isDevelopment,
         };
         console.log('befor setConfig', config);
         this.$store.dispatch('setConfig', config);
@@ -214,6 +235,12 @@ export default {
 
       ipcRenderer.send(channels.TRANSFER_FILE, selectedFile);
     },
+    onClickStop() {
+      if (!this.working) {
+        return;
+      }
+      ipcRenderer.send(channels.TRANSFER_FILE_STOP);
+    },
     findFile(jobId) {
       return this.$store.state.files.find(file => file.jobId === jobId);
     },
@@ -264,6 +291,9 @@ export default {
         console.log(error);
         this.error(error.message);
       }
+    },
+    onClickConfig() {
+      alert('준비중입니다.');
     },
     retryTransfer() {
       // if (selectedFile.errors !== null) {

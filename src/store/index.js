@@ -32,6 +32,7 @@ export default new Vuex.Store({
       downloadDir: '',
       appVersion: '',
       os: '',
+      isDevelopment: false,
     },
   },
   mutations: {

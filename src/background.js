@@ -55,6 +55,8 @@ function createWindow() {
     },
   });
 
+  win.setMenu(null);
+
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
@@ -165,6 +167,7 @@ async function processJob(args) {
           downloadDir: app.getPath('downloads'),
           appVersion: app.getVersion(),
           os: `${os.platform()}-${os.release()}(${os.arch()})}`,
+          isDevelopment,
         });
       });
     }

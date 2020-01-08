@@ -7,6 +7,16 @@
     <title>File Manager Test Page</title>
   </head>
   <body>
-    <a href="gemiso.file-manager://?job-id=123">테스트</a>
+    <div style="border:1px solid gray; padding: 10px;">
+      <h1>전송 프로그램 실행</h1>
+      <input id="job-id" placeholder="job-id" />
+      <button onclick="launchApp();">실행</button>
+    </div>
+    <script>
+      function launchApp() {
+        var input = document.getElementById('job-id');
+        window.location = 'gemiso.file-manager://?job_id=' + input.value;
+      }
+    </script>
   </body>
 </html>
