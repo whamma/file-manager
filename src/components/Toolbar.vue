@@ -11,19 +11,18 @@
         <span>테스트3</span>
       </v-btn> -->
       <!-- 시작 버튼 -->
-      <v-btn color="success" :disabled="startable" class="mr-4" @click="onClickStart">
+      <v-btn color="success" :disabled="!startable" class="mr-4" @click="onClickStart">
         <v-icon left>mdi-play</v-icon>
         <span>시작</span>
       </v-btn>
       <!-- 중지 버튼 -->
-      <v-btn color="error" :disabled="stopable" @click="onClickStop">
+      <v-btn color="error" :disabled="!stopable" @click="onClickStop">
         <v-icon left>mdi-stop</v-icon>
-        <span>중지</span>
+        <span>전송취소</span>
       </v-btn>
       <v-spacer></v-spacer>
-      <v-btn icon @click="onClickConfig">
-        <v-icon>mdi-settings</v-icon>
-      </v-btn>
+
+      <setting-dialog :disabled="working" />
     </v-app-bar>
   </div>
 </template>
@@ -33,6 +32,7 @@ import { channels } from '@/shared/constants';
 import { is404 } from '@/utils/response';
 import path from 'path';
 import { EventBus } from '@/utils/event-bus';
+import SettingDialog from '@/components/SettingDialog';
 
 let ipcRenderer = null;
 if (typeof window.require === 'function') {
@@ -41,11 +41,17 @@ if (typeof window.require === 'function') {
 
 export default {
   name: 'toolbar',
+  components: {
+    SettingDialog,
+  },
   created() {
     if (ipcRenderer) {
       this.listenIpcEvents();
     }
     EventBus.$on('open-file', file => {
+      if (!ipcRenderer) {
+        return;
+      }
       console.log('$on.open-file', file);
       ipcRenderer.send(channels.FILE_OPEN, file);
     });
@@ -58,10 +64,10 @@ export default {
   },
   computed: {
     startable() {
-      return this.working || !this.selectTransferFile();
+      return !this.working && this.selectTransferFile();
     },
     stopable() {
-      return !this.working;
+      return this.working;
     },
     appVersion() {
       return this.$store.state.config.appVersion;
@@ -79,6 +85,9 @@ export default {
   methods: {
     error(message) {
       this.setAlert({ type: 'error', message });
+    },
+    warning(message) {
+      this.setAlert({ type: 'warning', message });
     },
     success(message) {
       this.setAlert({ type: 'success', message });
@@ -129,7 +138,7 @@ export default {
           const fileName = path.basename(job.file_path);
           file.fileName = fileName;
           file.remoteFileName = job.file_path;
-          file.fileSize = parseInt(job.filesize);
+          file.filesize = parseInt(job.filesize);
           file.downloadDir = config.downloadDir;
           file.status = job.status;
         }
@@ -146,13 +155,12 @@ export default {
       // 파일 열고 난 후
       ipcRenderer.on(channels.FILE_OPEN, (event, file) => {
         console.log('after file open :', file);
-        file.status = 'standby';
         this.$store.dispatch('updateFile', file);
       });
 
       // 파일 전송 시
       ipcRenderer.on(channels.TRANSFER_FILE, async (event, file) => {
-        file.progress = Math.round((file.transferred / file.fileSize) * 100);
+        file.progress = Math.round((file.transferred / file.filesize) * 100);
         this.$store.dispatch('updateFile', file);
 
         if (file.status === 'finished') {
@@ -162,6 +170,10 @@ export default {
           this.working = false;
           this.error(file.errors);
           console.log(file.errors);
+          this.updateProgress(file);
+        } else if (file.status === 'canceled') {
+          this.working = false;
+          this.warning('전송작업이 취소 되었습니다.');
           this.updateProgress(file);
         } else {
           this.updateProgress(file);
@@ -239,14 +251,14 @@ export default {
       if (!this.working) {
         return;
       }
-      ipcRenderer.send(channels.TRANSFER_FILE_STOP);
+      ipcRenderer.send(channels.TRANSFER_FILE_ABORT);
     },
     findFile(jobId) {
       return this.$store.state.files.find(file => file.jobId === jobId);
     },
     selectTransferFile() {
       // 준비완료 된 파일만 전송 가능
-      return this.$store.state.files.find(file => file.status === 'standby');
+      return this.$store.state.files.find(file => file.status === 'queued');
     },
     async assignJob(jobId) {
       //작업 할당 시 client_os, client_ver 제공해야 함
@@ -291,9 +303,6 @@ export default {
         console.log(error);
         this.error(error.message);
       }
-    },
-    onClickConfig() {
-      alert('준비중입니다.');
     },
     retryTransfer() {
       // if (selectedFile.errors !== null) {

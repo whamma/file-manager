@@ -2,14 +2,13 @@ import Vue from 'vue';
 import Vuex from 'vuex';
 
 Vue.use(Vuex);
-
 /*
   jobId: 123,
   filePath: 'd:\\테스트.mp4',
   fileName: '테스트.mp4',
   type: 'upload',
   status: 'working',
-  fileSize: 4096,
+  filesize: 4096,
   transferred: 1024,
   progress: 34,
   errors: null,
@@ -48,6 +47,9 @@ export default new Vuex.Store({
       }
       state.files = [...state.files.slice(0, idx), payload, ...state.files.slice(idx + 1)];
     },
+    removeFile(state, payload) {
+      state.files = state.files.filter(file => file.jobId !== payload.jobId);
+    },
     setConfig(state, payload) {
       state.config = { ...payload };
     },
@@ -58,6 +60,9 @@ export default new Vuex.Store({
     },
     updateFile({ commit }, payload) {
       commit('updateFile', payload);
+    },
+    removeFile({ commit }, payload) {
+      commit('removeFile', payload);
     },
     setConfig({ commit }, payload) {
       commit('setConfig', payload);

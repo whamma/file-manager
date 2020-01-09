@@ -2,6 +2,12 @@ const ftp = require('basic-ftp');
 import logger from 'electron-log';
 
 const client = new ftp.Client(10000);
+let abortRequested = false;
+
+export const abort = async () => {
+  abortRequested = true;
+  client.close();
+};
 
 export const uploadFtp = async ({
   host,
@@ -14,8 +20,10 @@ export const uploadFtp = async ({
 }) => {
   const result = {
     success: false,
+    aborted: false,
     errors: null,
   };
+  abortRequested = false;
   try {
     logger.debug('before access uploadFtp');
     logger.debug('access server uploadFtp', {
@@ -50,10 +58,16 @@ export const uploadFtp = async ({
 
     result.success = true;
   } catch (error) {
-    logger.error('error uploadFtp', error);
-    logger.error('error.message uploadFtp', error.message);
-    result.success = false;
-    result.errors = error.message;
+    if (abortRequested) {
+      result.success = false;
+      result.aborted = true;
+      return result;
+    } else {
+      logger.error('error uploadFtp', error);
+      logger.error('error.message uploadFtp', error.message);
+      result.success = false;
+      result.errors = error.message;
+    }
   }
   client.close();
   return result;
@@ -70,8 +84,10 @@ export const downloadFtp = async ({
 }) => {
   const result = {
     success: false,
+    aborted: false,
     errors: null,
   };
+  abortRequested = false;
   try {
     logger.debug('before access downloadFtp');
     logger.debug('access server downloadFtp', {
@@ -114,10 +130,16 @@ export const downloadFtp = async ({
 
     result.success = true;
   } catch (error) {
-    logger.error('error downloadFtp', error);
-    logger.error('error.message downloadFtp', error.message);
-    result.success = false;
-    result.errors = error.message;
+    if (abortRequested) {
+      result.success = false;
+      result.aborted = true;
+      return result;
+    } else {
+      logger.error('error downloadFtp', error);
+      logger.error('error.message downloadFtp', error.message);
+      result.success = false;
+      result.errors = error.message;
+    }
   }
   client.close();
   return result;

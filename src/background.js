@@ -10,6 +10,7 @@ Object.assign(console, logger.functions);
 import { configure } from './electron/ipc-handler';
 import { getQueryParamsFromArgs } from './electron/process-args';
 import { channels } from './shared/constants';
+import { loadDownloadDir } from './electron/config';
 
 const os = require('os');
 
@@ -113,9 +114,9 @@ app.on('ready', async () => {
   let args = process.argv;
   if (isDevelopment) {
     // 업로드
-    args.push(`${PROTOCOL}://?job_id=321`);
+    // args.push(`${PROTOCOL}://?job_id=321`);
     // 다운로드
-    //args.push(`${PROTOCOL}://?job_id=341`);
+    args.push(`${PROTOCOL}://?job_id=422`);
   }
   console.log('args', args);
 
@@ -161,10 +162,17 @@ async function processJob(args) {
     } else {
       win.webContents.on('did-finish-load', () => {
         webContentsLoaded = true;
+
+        const appTitle = require('../package.json').appTitle;
+        const appVersion = require('../package.json').version;
+        const windowTitle = `${appTitle} ${appVersion}`;
+
+        win.setTitle(windowTitle);
+
         console.log(`Before send add_job.(jobId : ${jobId})`);
         win.webContents.send(channels.ADD_JOB, {
           jobId,
-          downloadDir: app.getPath('downloads'),
+          downloadDir: loadDownloadDir() || app.getPath('downloads'),
           appVersion: app.getVersion(),
           os: `${os.platform()}-${os.release()}(${os.arch()})}`,
           isDevelopment,
@@ -172,8 +180,9 @@ async function processJob(args) {
       });
     }
   } else {
-    dialog.showMessageBox(null, {
-      message: '작업 정보가 누락되었습니다.',
-    });
+    // dialog.showMessageBox(null, {
+    //   message: '작업 정보가 누락되었습니다.',
+    // });
+    console.log('queryParams is empty.');
   }
 }
