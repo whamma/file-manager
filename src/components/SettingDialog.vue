@@ -31,7 +31,7 @@
       <v-divider />
       <v-card-actions>
         <v-spacer></v-spacer>
-        <v-btn color="primary" text @click="dialog = false">닫기</v-btn>
+        <v-btn text @click="dialog = false">닫기</v-btn>
         <v-btn color="primary" text @click="onSaveClick">저장</v-btn>
       </v-card-actions>
     </v-card>
