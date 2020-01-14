@@ -116,7 +116,7 @@ app.on('ready', async () => {
     // 업로드
     // args.push(`${PROTOCOL}://?job_id=321`);
     // 다운로드
-    args.push(`${PROTOCOL}://?job_id=422`);
+    args.push(`${PROTOCOL}://?job_id=341`);
   }
   console.log('args', args);
 
@@ -158,6 +158,10 @@ async function processJob(args) {
       console.log('before send add_job');
       win.webContents.send(channels.ADD_JOB, {
         jobId,
+        downloadDir: loadDownloadDir() || app.getPath('downloads'),
+        appVersion: app.getVersion(),
+        os: `${os.platform()}-${os.release()}(${os.arch()})`,
+        isDevelopment,
       });
     } else {
       win.webContents.on('did-finish-load', () => {
@@ -174,7 +178,7 @@ async function processJob(args) {
           jobId,
           downloadDir: loadDownloadDir() || app.getPath('downloads'),
           appVersion: app.getVersion(),
-          os: `${os.platform()}-${os.release()}(${os.arch()})}`,
+          os: `${os.platform()}-${os.release()}(${os.arch()})`,
           isDevelopment,
         });
       });

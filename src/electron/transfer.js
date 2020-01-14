@@ -1,7 +1,7 @@
 const ftp = require('basic-ftp');
 import logger from 'electron-log';
 
-const client = new ftp.Client(10000);
+let client = new ftp.Client(10000);
 let abortRequested = false;
 
 export const abort = async () => {
@@ -24,6 +24,7 @@ export const uploadFtp = async ({
     errors: null,
   };
   abortRequested = false;
+  client = new ftp.Client(10000);
   try {
     logger.debug('before access uploadFtp');
     logger.debug('access server uploadFtp', {
@@ -32,6 +33,7 @@ export const uploadFtp = async ({
       user,
       password,
     });
+
     await client.access({
       host,
       port,
@@ -70,6 +72,7 @@ export const uploadFtp = async ({
     }
   }
   client.close();
+  client = null;
   return result;
 };
 
@@ -88,6 +91,7 @@ export const downloadFtp = async ({
     errors: null,
   };
   abortRequested = false;
+  client = new ftp.Client(10000);
   try {
     logger.debug('before access downloadFtp');
     logger.debug('access server downloadFtp', {
@@ -96,6 +100,7 @@ export const downloadFtp = async ({
       user,
       password,
     });
+
     await client.access({
       host,
       port,
@@ -142,5 +147,6 @@ export const downloadFtp = async ({
     }
   }
   client.close();
+  client = null;
   return result;
 };

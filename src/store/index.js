@@ -23,16 +23,19 @@ Vue.use(Vuex);
     userId: 'admin
   }
  */
-
-export default new Vuex.Store({
-  state: {
-    files: [],
-    config: {
+/*
+config: {
       downloadDir: '',
       appVersion: '',
       os: '',
       isDevelopment: false,
-    },
+    }
+*/
+
+export default new Vuex.Store({
+  state: {
+    files: [],
+    config: null,
   },
   mutations: {
     addFile(state, payload) {

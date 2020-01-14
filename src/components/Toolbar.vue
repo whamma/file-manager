@@ -9,7 +9,7 @@
       </v-btn>
       <v-btn v-if="isDevelopment" color="primary" class="mr-4" @click="onTest3">
         <span>테스트3</span>
-      </v-btn> -->
+      </v-btn>-->
       <!-- 시작 버튼 -->
       <v-btn color="success" :disabled="!startable" class="mr-4" @click="onClickStart">
         <v-icon left>mdi-play</v-icon>
@@ -69,6 +69,9 @@ export default {
     stopable() {
       return this.working;
     },
+    config() {
+      return this.$store.state.config;
+    },
     appVersion() {
       return this.$store.state.config.appVersion;
     },
@@ -124,14 +127,19 @@ export default {
           type: job.type,
         };
         console.log('job', job);
-        const config = {
-          downloadDir: jobInfo.downloadDir,
-          appVersion: jobInfo.appVersion,
-          os: jobInfo.os,
-          isDevelopment: jobInfo.isDevelopment,
-        };
-        console.log('befor setConfig', config);
-        this.$store.dispatch('setConfig', config);
+        let config = this.config;
+        console.log('this.config : ', config);
+
+        if (!config) {
+          config = {
+            downloadDir: jobInfo.downloadDir,
+            appVersion: jobInfo.appVersion,
+            os: jobInfo.os,
+            isDevelopment: jobInfo.isDevelopment,
+          };
+          console.log('befor setConfig', config);
+          this.$store.dispatch('setConfig', config);
+        }
 
         if (job.type === 'download') {
           // 다운로드 작업이면 파일정보를 추가로 입력한다.
@@ -161,22 +169,24 @@ export default {
       // 파일 전송 시
       ipcRenderer.on(channels.TRANSFER_FILE, async (event, file) => {
         file.progress = Math.round((file.transferred / file.filesize) * 100);
+
+        // console.log('before updateFile on TRANSFER_FILE', file);
         this.$store.dispatch('updateFile', file);
 
         if (file.status === 'finished') {
-          this.updateProgress(file);
-          this.onClickStart();
+          await this.updateProgress(file);
+          await this.onClickStart();
         } else if (file.status === 'error') {
           this.working = false;
           this.error(file.errors);
           console.log(file.errors);
-          this.updateProgress(file);
+          await this.updateProgress(file);
         } else if (file.status === 'canceled') {
           this.working = false;
           this.warning('전송작업이 취소 되었습니다.');
-          this.updateProgress(file);
+          await this.updateProgress(file);
         } else {
-          this.updateProgress(file);
+          await this.updateProgress(file);
         }
       });
     },
@@ -218,16 +228,15 @@ export default {
         return;
       }
 
-      console.log(selectedFile);
-
       if (!selectedFile.jobId) {
         alert('작업아이디가 유효하지 않습니다.');
         this.working = false;
         return;
       }
 
+      console.log('before assignJob', selectedFile);
       const job = await this.assignJob(selectedFile.jobId);
-      console.log(job);
+      console.log('after assignJob', job);
 
       if (!job.file_server) {
         alert('파일서버 정보가 유효하지 않습니다.');
@@ -245,6 +254,7 @@ export default {
 
       selectedFile.server = server;
 
+      console.log('before send ipc TRANSFER_FILE', selectedFile);
       ipcRenderer.send(channels.TRANSFER_FILE, selectedFile);
     },
     onClickStop() {
