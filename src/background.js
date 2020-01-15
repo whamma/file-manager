@@ -1,6 +1,6 @@
 'use strict';
 
-import { app, protocol, BrowserWindow, ipcMain, dialog } from 'electron';
+import { app, protocol, BrowserWindow, ipcMain } from 'electron';
 import { createProtocol, installVueDevtools } from 'vue-cli-plugin-electron-builder/lib';
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -184,9 +184,6 @@ async function processJob(args) {
       });
     }
   } else {
-    // dialog.showMessageBox(null, {
-    //   message: '작업 정보가 누락되었습니다.',
-    // });
     console.log('queryParams is empty.');
   }
 }
