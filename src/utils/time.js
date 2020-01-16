@@ -1,6 +1,6 @@
 import _ from 'lodash/core';
 
-export const secToStr = (seconds, { hSep, mSep, sSep }) => {
+export const secToStr = (seconds, { hSep, mSep, sSep } = {}) => {
   let timeStr = '';
   let hh, mm, ss;
   if (seconds <= 0) {
@@ -21,7 +21,7 @@ export const secToStr = (seconds, { hSep, mSep, sSep }) => {
   if (_.isEmpty(hSep) || _.isEmpty(mSep) || _.isEmpty(sSep)) {
     hSep = ':';
     mSep = ':';
-    mSep = ':';
+    sSep = '';
   }
 
   if (hh) {

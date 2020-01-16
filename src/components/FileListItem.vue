@@ -36,6 +36,28 @@
         </v-tooltip>
       </v-list-item-action>
 
+      <v-list-item-action v-if="file.status === 'finished'">
+        <v-tooltip top>
+          <template v-slot:activator="{ on }">
+            <v-btn icon v-on="on" @click="onClickRunFile(file)">
+              <v-icon>mdi-rocket</v-icon>
+            </v-btn>
+          </template>
+          <span>실행</span>
+        </v-tooltip>
+      </v-list-item-action>
+
+      <v-list-item-action v-if="file.status === 'finished'">
+        <v-tooltip top>
+          <template v-slot:activator="{ on }">
+            <v-btn icon v-on="on" @click="onClickOpenFolder(file)">
+              <v-icon>mdi-folder-open-outline</v-icon>
+            </v-btn>
+          </template>
+          <span>폴더 열기</span>
+        </v-tooltip>
+      </v-list-item-action>
+
       <v-list-item-action v-if="fileOpenButtonVisible(file)">
         <v-tooltip top>
           <template v-slot:activator="{ on }">
@@ -70,6 +92,7 @@
 import bytes from 'bytes';
 import { EventBus } from '@/utils/event-bus';
 import { secToStr } from '@/utils/time';
+import _ from 'lodash/core';
 
 export default {
   props: {
@@ -99,6 +122,12 @@ export default {
     onClickCancel(file) {
       file.status = 'canceled';
       this.$store.dispatch('updateFile', file);
+    },
+    onClickRunFile(file) {
+      EventBus.$emit('run-file', file);
+    },
+    onClickOpenFolder(file) {
+      EventBus.$emit('open-folder', file);
     },
     cancelButtonVisible(file) {
       return !file.status || file.status === 'queued';
@@ -139,7 +168,7 @@ export default {
       }
 
       const durationStr = secToStr(duration);
-      if (durationStr.isEmpty()) {
+      if (_.isEmpty(durationStr)) {
         return '';
       }
 
@@ -152,4 +181,8 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.content-title {
+  font-weight: bold;
+}
+</style>

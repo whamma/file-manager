@@ -8,5 +8,7 @@ module.exports = {
     DIR_OPEN: 'dir_open',
     SAVE_CONFIG: 'save_config',
     LOAD_CONFIG: 'load_config',
+    RUN_FILE: 'run_file',
+    OPEN_FOLDER: 'open_folder',
   },
 };

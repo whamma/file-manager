@@ -57,6 +57,22 @@ export default {
       console.log('$on.open-file', file);
       ipcRenderer.send(channels.FILE_OPEN, file);
     });
+
+    EventBus.$on('run-file', file => {
+      if (!ipcRenderer) {
+        return;
+      }
+      console.log('$on.run-file', file);
+      ipcRenderer.send(channels.RUN_FILE, file);
+    });
+
+    EventBus.$on('open-folder', file => {
+      if (!ipcRenderer) {
+        return;
+      }
+      console.log('$on.open-folder', file);
+      ipcRenderer.send(channels.OPEN_FOLDER, file);
+    });
   },
   data() {
     return {
@@ -149,9 +165,9 @@ export default {
           // 제목이 있으면 제목으로
           // 제목이 없으면 file_path에서 파일명을 가져온다.
           let fileName = '';
-          if (_.isString(job.title) && !_.isEmpty()) {
+          if (_.isString(job.title) && !_.isEmpty(job.title)) {
             // 파일 확장자 추출 .이 포함된다.
-            const ext = path.extname(file.file_path);
+            const ext = path.extname(job.file_path);
             // 제목을 정제해서 확장자를 붙여준다.
             fileName = sanitize(job.title) + ext;
           } else {

@@ -2,6 +2,7 @@ import { channels } from '../shared/constants';
 import { openFile, openDirectory } from './open-dialogs';
 import { uploadFtp, downloadFtp, abort } from './transfer';
 import { saveDownloadDir, loadDownloadDir } from './config';
+import { shell } from 'electron';
 
 import logger from 'electron-log';
 import path from 'path';
@@ -68,6 +69,7 @@ export const configure = ({ ipcMain, app, win }) => {
         },
       });
     } else {
+      // download
       let remoteFile = '';
       if (file.server.remoteDir) {
         remoteFile = path
@@ -98,6 +100,8 @@ export const configure = ({ ipcMain, app, win }) => {
         },
       });
     }
+
+    console.log('download finished', file);
 
     if (result.success) {
       file.status = 'finished';
@@ -143,6 +147,14 @@ export const configure = ({ ipcMain, app, win }) => {
     } catch (error) {
       console.log('trasnfer file abort exception:', error);
     }
+  });
+
+  ipcMain.on(channels.RUN_FILE, async (event, file) => {
+    await shell.openItem(file.filePath);
+  });
+
+  ipcMain.on(channels.OPEN_FOLDER, async (event, file) => {
+    await shell.showItemInFolder(file.filePath);
   });
 };
 
