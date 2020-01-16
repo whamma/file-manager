@@ -33,6 +33,8 @@ import { is404 } from '@/utils/response';
 import path from 'path';
 import { EventBus } from '@/utils/event-bus';
 import SettingDialog from '@/components/SettingDialog';
+import sanitize from 'sanitize-filename';
+import _ from 'lodash/core';
 
 let ipcRenderer = null;
 if (typeof window.require === 'function') {
@@ -113,6 +115,7 @@ export default {
       }
     },
     listenIpcEvents() {
+      // 작업 추가
       ipcRenderer.on(channels.ADD_JOB, async (event, jobInfo) => {
         console.log('event', event);
         console.log('jobInfo', jobInfo);
@@ -143,7 +146,19 @@ export default {
 
         if (job.type === 'download') {
           // 다운로드 작업이면 파일정보를 추가로 입력한다.
-          const fileName = path.basename(job.file_path);
+          // 제목이 있으면 제목으로
+          // 제목이 없으면 file_path에서 파일명을 가져온다.
+          let fileName = '';
+          if (_.isString(job.title) && !_.isEmpty()) {
+            // 파일 확장자 추출 .이 포함된다.
+            const ext = path.extname(file.file_path);
+            // 제목을 정제해서 확장자를 붙여준다.
+            fileName = sanitize(job.title) + ext;
+          } else {
+            // 파일 경로에서 파일명만 추출
+            fileName = path.basename(job.file_path);
+          }
+
           file.fileName = fileName;
           file.remoteFileName = job.file_path;
           file.filesize = parseInt(job.filesize);

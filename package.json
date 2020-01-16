@@ -19,6 +19,8 @@
     "core-js": "^3.4.4",
     "electron-log": "^4.0.2",
     "electron-store": "^5.1.0",
+    "lodash": "^4.17.15",
+    "sanitize-filename": "^1.6.3",
     "url-parse": "^1.4.7",
     "uuid": "^3.3.3",
     "vue": "^2.6.10",
