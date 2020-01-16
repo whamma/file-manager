@@ -159,6 +159,8 @@ export default {
             fileName = path.basename(job.file_path);
           }
 
+          file.title = job.title;
+          file.duration = job.duration;
           file.fileName = fileName;
           file.remoteFileName = job.file_path;
           file.filesize = parseInt(job.filesize);

@@ -9,6 +9,7 @@
         <v-list-item-title>{{ file.fileName }}</v-list-item-title>
         <v-list-item-subtitle>
           {{ bytesToStr(file.transferred) }}/{{ bytesToStr(file.filesize) }}
+          {{ printDuration(file.duration) }}
         </v-list-item-subtitle>
         <v-list-item-subtitle v-if="file.status === 'working'">
           {{ renderRemainTime(calcRemainTime(file)) }} ({{ bytesToStr(calcSpeed(file)) }}/초)
@@ -68,6 +69,7 @@
 <script>
 import bytes from 'bytes';
 import { EventBus } from '@/utils/event-bus';
+import { secToStr } from '@/utils/time';
 
 export default {
   props: {
@@ -111,32 +113,8 @@ export default {
       );
     },
     renderRemainTime(remainTime) {
-      let remainTimeStr = '';
-      let hh, mm, ss;
-      if (remainTime <= 0) {
-        return '';
-      }
+      let remainTimeStr = secToStr(remainTime, { hSep: '시 ', mSep: '분 ', sSep: '초 ' });
 
-      ss = remainTime;
-      if (ss > 3600) {
-        hh = Math.floor(ss / 3600);
-        ss = ss - hh * 3600;
-      }
-
-      if (ss > 60) {
-        mm = Math.floor(ss / 60);
-        ss = ss - mm * 60;
-      }
-
-      if (hh) {
-        remainTimeStr = `${hh}시간 `;
-      }
-      if (mm) {
-        remainTimeStr += `${mm}분 `;
-      }
-      if (ss) {
-        remainTimeStr += `${ss}초 `;
-      }
       if (remainTimeStr && remainTimeStr !== '') {
         remainTimeStr += '남음';
       }
@@ -154,6 +132,18 @@ export default {
       const speed = (file.transferred / elapsed) * 1000;
 
       return speed;
+    },
+    printDuration(duration) {
+      if (!duration) {
+        return '';
+      }
+
+      const durationStr = secToStr(duration);
+      if (durationStr.isEmpty()) {
+        return '';
+      }
+
+      return `(${durationStr})`;
     },
     onClickListItem() {
       //
