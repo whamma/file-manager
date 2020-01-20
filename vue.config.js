@@ -17,6 +17,11 @@ module.exports = {
         nsis: {
           installerIcon: './src/assets/icon.ico',
         },
+        mac: {
+          category: 'public.app-category.business',
+          icon: './src/assets/icon.icns',
+          target: ['default'],
+        },
         protocols: [
           {
             name: 'file-manager',
