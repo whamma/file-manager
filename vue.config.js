@@ -1,3 +1,5 @@
+process.env.VUE_APP_NODE_ENV = 'production';
+
 module.exports = {
   transpileDependencies: ['vuetify'],
   pluginOptions: {

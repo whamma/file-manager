@@ -8,7 +8,7 @@ import logger from 'electron-log';
 Object.assign(console, logger.functions);
 
 import { configure } from './electron/ipc-handler';
-import { getQueryParamsFromArgs } from './electron/process-args';
+import { getQueryParamsFromArgs, containedProtocolArg, replaceProtocolArg } from './electron/process-args';
 import { channels } from './shared/constants';
 import { loadDownloadDir } from './electron/config';
 
@@ -73,6 +73,43 @@ function createWindow() {
   });
 }
 
+app.on('open-url', (event, url) => {
+  console.log('open-url url : ', url);
+  
+  /**
+   * 앱이 실행중이 아니면 process.argv에만 url을 추가 해준다.
+   */
+  if(!app.isReady()) {
+    process.argv.push(url);
+    return;
+
+    // if(!containedProtocolArg(process.argv, PROTOCOL)) {
+    //   process.argv.push(url);
+    // } else {
+    //   process.argv = replaceProtocolArg(process.argv, PROTOCOL, url);
+    // }
+    // return;
+  }
+
+  let args = [url];
+
+  console.log('open-url process.argv', process.argv);
+  console.log('open-url args', args);
+
+  if (win) {
+    console.log('win exists');
+    processJob(args);
+    win.restore();
+    win.focus();
+  } else {
+    console.log('win does not exists');
+    webContentsLoaded = false;
+    createWindow();
+
+    processJob(args);
+  }
+});
+
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
   // On macOS it is common for applications and their menu bar
@@ -112,7 +149,7 @@ app.on('ready', async () => {
   console.log('process.argv', process.argv);
   console.log('isDevelopment', isDevelopment);
   let args = process.argv;
-  if (isDevelopment) {
+  if (isDevelopment && containedProtocolArg(args, PROTOCOL)) {
     // 업로드
     // args.push(`${PROTOCOL}://?job_id=321`);
     // 다운로드
