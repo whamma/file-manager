@@ -116,7 +116,7 @@ app.on('ready', async () => {
     // 업로드
     // args.push(`${PROTOCOL}://?job_id=321`);
     // 다운로드
-    args.push(`${PROTOCOL}://?job_id=341`);
+    args.push(`${PROTOCOL}://?job_id=283`);
   }
   console.log('args', args);
 

@@ -35,6 +35,7 @@ import { EventBus } from '@/utils/event-bus';
 import SettingDialog from '@/components/SettingDialog';
 import sanitize from 'sanitize-filename';
 import _ from 'lodash/core';
+import { getErrorResponse } from '@/utils/request-error';
 
 let ipcRenderer = null;
 if (typeof window.require === 'function') {
@@ -127,6 +128,8 @@ export default {
         console.log('error in getJob', error);
         if (is404(error)) {
           this.error(`작업을 서버에서 찾을 수 없습니다. (${jobId})`);
+        } else {
+          this.error(getErrorResponse(error).message);
         }
       }
     },
@@ -196,6 +199,7 @@ export default {
       // 파일 열고 난 후
       ipcRenderer.on(channels.FILE_OPEN, (event, file) => {
         console.log('after file open :', file);
+        file.status = 'queued';
         this.$store.dispatch('updateFile', file);
       });
 
@@ -237,6 +241,7 @@ export default {
         console.log(res);
       } catch (error) {
         console.log(error);
+        this.error(getErrorResponse(error).message);
       }
     },
     async onTest2() {
@@ -316,7 +321,7 @@ export default {
         return res.data.data;
       } catch (error) {
         console.log(error);
-        this.error(error.message);
+        this.error(getErrorResponse(error).message);
       }
     },
     async updateProgress(file) {
@@ -344,7 +349,7 @@ export default {
         console.log('updateProgress response:', res);
       } catch (error) {
         console.log(error);
-        this.error(error.message);
+        this.error(getErrorResponse(error).message);
       }
     },
     retryTransfer() {
