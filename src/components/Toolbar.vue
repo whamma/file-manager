@@ -342,7 +342,7 @@ export default {
 
         if (file.type === 'upload') {
           payload.file_path = file.remoteFilePath;
-          payload.org_file_name = file.fileName;
+          payload.org_filename = file.fileName;
           payload.filesize = file.filesize;
         }
 
