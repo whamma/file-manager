@@ -51,6 +51,7 @@ export const configure = ({ ipcMain, app, win }) => {
       } else {
         remoteFile = file.remoteFileName;
       }
+      file.remoteFilePath = remoteFile;
       logger.debug('upload file', file);
       result = await uploadFtp({
         host,

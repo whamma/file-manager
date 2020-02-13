@@ -341,7 +341,8 @@ export default {
         };
 
         if (file.type === 'upload') {
-          payload.file_path = file.fileName;
+          payload.file_path = file.remoteFilePath;
+          payload.org_file_name = file.fileName;
           payload.filesize = file.filesize;
         }
 

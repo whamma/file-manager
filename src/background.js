@@ -11,6 +11,9 @@ import { configure } from './electron/ipc-handler';
 import { getQueryParamsFromArgs } from './electron/process-args';
 import { channels } from './shared/constants';
 import { loadDownloadDir } from './electron/config';
+import debug from 'electron-debug';
+
+debug();
 
 const os = require('os');
 
