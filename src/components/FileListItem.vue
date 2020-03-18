@@ -11,12 +11,21 @@
           {{ bytesToStr(file.transferred) }}/{{ bytesToStr(file.filesize) }}
           {{ printDuration(file.duration) }}
         </v-list-item-subtitle>
-        <v-list-item-subtitle v-if="file.status === 'working'">
-          {{ renderRemainTime(calcRemainTime(file)) }} ({{ bytesToStr(calcSpeed(file)) }}/초)
-        </v-list-item-subtitle>
+        <v-list-item-subtitle
+          v-if="file.status === 'working'"
+        >{{ renderRemainTime(calcRemainTime(file)) }} ({{ bytesToStr(calcSpeed(file)) }}/초)</v-list-item-subtitle>
       </v-list-item-content>
 
       <v-list-item-action>
+        <v-tooltip v-if="retryButtonVisible(file)" top>
+          <template v-slot:activator="{ on }">
+            <v-btn icon v-on="on" @click="onClickRetry(file)">
+              <v-icon>mdi-restart</v-icon>
+            </v-btn>
+          </template>
+          <span>재시작</span>
+        </v-tooltip>
+
         <v-tooltip v-if="cancelButtonVisible(file)" top>
           <template v-slot:activator="{ on }">
             <v-btn icon v-on="on" @click="onClickCancel(file)">
@@ -77,9 +86,7 @@
           :width="7"
           :value="file.progress"
           color="teal"
-        >
-          {{ file.progress }}
-        </v-progress-circular>
+        >{{ file.progress }}</v-progress-circular>
         <v-icon v-else-if="file.status === 'finished'" color="success" large>mdi-check-bold</v-icon>
         <v-icon v-else-if="file.status === 'error'" color="error" large>mdi-alert-circle</v-icon>
         <v-icon v-else-if="file.status === 'canceled'" color="warning" large>mdi-cancel</v-icon>
@@ -128,6 +135,12 @@ export default {
     },
     onClickOpenFolder(file) {
       EventBus.$emit('open-folder', file);
+    },
+    onClickRetry(file) {
+      EventBus.$emit('retry', file);
+    },
+    retryButtonVisible(file) {
+      return !file.status || file.status === 'error';
     },
     cancelButtonVisible(file) {
       return !file.status || file.status === 'queued';

@@ -3,7 +3,9 @@
     <!-- <v-app-bar app>123</v-app-bar> -->
     <toolbar @alert="onToolbarAlert" />
     <v-content>
-      <v-alert class="ma2" v-if="alert.type !== ''" :type="alert.type">{{ alert.message }}</v-alert>
+      <v-alert class="ma2" v-if="alert.type !== ''" :type="alert.type" dismissible>
+        {{ alert.message }}</v-alert
+      >
       <file-list />
     </v-content>
   </div>

@@ -8,9 +8,13 @@ import logger from 'electron-log';
 Object.assign(console, logger.functions);
 
 import { configure } from './electron/ipc-handler';
-import { getQueryParamsFromArgs, containedProtocolArg, replaceProtocolArg } from './electron/process-args';
+import {
+  getQueryParamsFromArgs,
+  containedProtocolArg,
+  replaceProtocolArg,
+} from './electron/process-args';
 import { channels } from './shared/constants';
-import { loadDownloadDir } from './electron/config';
+import { loadDownloadDir, loadIsDevelopment } from './electron/config';
 import debug from 'electron-debug';
 
 debug();
@@ -23,8 +27,6 @@ const PROTOCOL = 'gemiso.file-manager';
 // be closed automatically when the JavaScript object is garbage collected.
 let win;
 let webContentsLoaded = false;
-
-configure({ ipcMain, app, win });
 
 const appLock = app.requestSingleInstanceLock();
 
@@ -64,7 +66,9 @@ function createWindow() {
   if (process.env.WEBPACK_DEV_SERVER_URL) {
     // Load the url of the dev server if in development mode
     win.loadURL(process.env.WEBPACK_DEV_SERVER_URL);
-    if (!process.env.IS_TEST) win.webContents.openDevTools();
+    if (!process.env.IS_TEST) {
+      //win.webContents.openDevTools();
+    }
   } else {
     createProtocol('app');
     // Load the index.html when not in development
@@ -74,15 +78,17 @@ function createWindow() {
   win.on('closed', () => {
     win = null;
   });
+
+  configure({ ipcMain, app, win });
 }
 
 app.on('open-url', (event, url) => {
   console.log('open-url url : ', url);
-  
+
   /**
    * 앱이 실행중이 아니면 process.argv에만 url을 추가 해준다.
    */
-  if(!app.isReady()) {
+  if (!app.isReady()) {
     process.argv.push(url);
     return;
 
@@ -149,6 +155,8 @@ app.on('ready', async () => {
     }
   }
 
+  // console.log('app data path', app.getPath('userData'));
+
   console.log('process.argv', process.argv);
   console.log('isDevelopment', isDevelopment);
   let args = process.argv;
@@ -156,8 +164,10 @@ app.on('ready', async () => {
     // 업로드
     // args.push(`${PROTOCOL}://?job_id=321`);
     // 다운로드
-    args.push(`${PROTOCOL}://?job_id=283`);
+    args.push(`${PROTOCOL}://?job_id=2145`);
   }
+  args.push(`${PROTOCOL}://?job_id=2145`);
+
   console.log('args', args);
 
   // 기본 프로토콜 설정
@@ -201,7 +211,7 @@ async function processJob(args) {
         downloadDir: loadDownloadDir() || app.getPath('downloads'),
         appVersion: app.getVersion(),
         os: `${os.platform()}-${os.release()}(${os.arch()})`,
-        isDevelopment,
+        isDevelopment: isDevelopment || loadIsDevelopment(),
       });
     } else {
       win.webContents.on('did-finish-load', () => {
@@ -214,16 +224,44 @@ async function processJob(args) {
         win.setTitle(windowTitle);
 
         console.log(`Before send add_job.(jobId : ${jobId})`);
-        win.webContents.send(channels.ADD_JOB, {
+        const job = {
           jobId,
           downloadDir: loadDownloadDir() || app.getPath('downloads'),
           appVersion: app.getVersion(),
           os: `${os.platform()}-${os.release()}(${os.arch()})`,
-          isDevelopment,
-        });
+          isDevelopment: isDevelopment || loadIsDevelopment(),
+        };
+        console.log(`job is ${JSON.stringify(job)}`);
+        win.webContents.send(channels.ADD_JOB, job);
+        console.log('After send add_job.(jobId : ${jobId})');
       });
     }
   } else {
     console.log('queryParams is empty.');
+    if (webContentsLoaded) {
+      win.webContents.send(channels.SET_CONFIG, {
+        downloadDir: loadDownloadDir() || app.getPath('downloads'),
+        appVersion: app.getVersion(),
+        os: `${os.platform()}-${os.release()}(${os.arch()})`,
+        isDevelopment: isDevelopment || loadIsDevelopment(),
+      });
+    } else {
+      win.webContents.on('did-finish-load', () => {
+        webContentsLoaded = true;
+
+        const appTitle = require('../package.json').appTitle;
+        const appVersion = require('../package.json').version;
+        const windowTitle = `${appTitle} ${appVersion}`;
+
+        win.setTitle(windowTitle);
+
+        win.webContents.send(channels.SET_CONFIG, {
+          downloadDir: loadDownloadDir() || app.getPath('downloads'),
+          appVersion: app.getVersion(),
+          os: `${os.platform()}-${os.release()}(${os.arch()})`,
+          isDevelopment: isDevelopment || loadIsDevelopment(),
+        });
+      });
+    }
   }
 }

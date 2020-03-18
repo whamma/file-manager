@@ -20,9 +20,14 @@
         <v-icon left>mdi-stop</v-icon>
         <span>전송취소</span>
       </v-btn>
+
       <v-spacer></v-spacer>
 
-      <setting-dialog :disabled="working" />
+      <setting-dialog :disabled="working"></setting-dialog>
+      <!-- 개발자도구 활성화 -->
+      <v-btn v-if="config && config.isDevelopment" icon @click="onClickInitDevTool">
+        <v-icon>mdi-tools</v-icon>
+      </v-btn>
     </v-app-bar>
   </div>
 </template>
@@ -74,6 +79,16 @@ export default {
       console.log('$on.open-folder', file);
       ipcRenderer.send(channels.OPEN_FOLDER, file);
     });
+
+    EventBus.$on('retry', file => {
+      if (!ipcRenderer) {
+        return;
+      }
+      console.log('$on.retry', file);
+      file.status = 'queued';
+      this.$store.dispatch('updateFile', file);
+      this.onClickStart();
+    });
   },
   data() {
     return {
@@ -105,8 +120,22 @@ export default {
     },
   },
   methods: {
-    error(message) {
+    handleError(error, file = null) {
+      //console.log(error);
+      console.log('error.response', error.response);
+      console.log('error.code', error.code);
+      let message = getErrorResponse(error).message;
+      if (error.code === 'ECONNABORTED') {
+        message = '서버에 접속할 수 없습니다.';
+      }
+
+      if (file) {
+        file.status = 'error';
+        this.$store.dispatch('updateFile', file);
+      }
       this.setAlert({ type: 'error', message });
+
+      throw error;
     },
     warning(message) {
       this.setAlert({ type: 'warning', message });
@@ -127,9 +156,9 @@ export default {
       } catch (error) {
         console.log('error in getJob', error);
         if (is404(error)) {
-          this.error(`작업을 서버에서 찾을 수 없습니다. (${jobId})`);
+          this.handleError(new Error(`작업을 서버에서 찾을 수 없습니다. (${jobId})`));
         } else {
-          this.error(getErrorResponse(error).message);
+          this.handleError(error);
         }
       }
     },
@@ -194,6 +223,10 @@ export default {
         if (job.type === 'upload') {
           ipcRenderer.send(channels.FILE_OPEN, addedFile);
         }
+
+        setTimeout(() => {
+          window.scrollTo(0, document.body.scrollHeight);
+        }, 500);
       });
 
       // 파일 열고 난 후
@@ -215,8 +248,8 @@ export default {
           await this.onClickStart();
         } else if (file.status === 'error') {
           this.working = false;
-          this.error(file.errors);
           console.log(file.errors);
+          this.handleError(new Error(file.errors), file);
           await this.updateProgress(file);
         } else if (file.status === 'canceled') {
           this.working = false;
@@ -225,6 +258,12 @@ export default {
         } else {
           await this.updateProgress(file);
         }
+      });
+
+      //환경설정 store에 저장
+      ipcRenderer.on(channels.SET_CONFIG, (event, config) => {
+        this.$store.dispatch('setConfig', config);
+        console.log('setConfig', this.config);
       });
     },
     async onTest() {
@@ -241,7 +280,7 @@ export default {
         console.log(res);
       } catch (error) {
         console.log(error);
-        this.error(getErrorResponse(error).message);
+        this.handleError(error);
       }
     },
     async onTest2() {
@@ -254,6 +293,9 @@ export default {
         console.log(file.jobId);
         this.$store.dispatch('addFile', file);
       }
+    },
+    onClickInitDevTool() {
+      ipcRenderer.send(channels.INIT_DEV_TOOL);
     },
     async onClickStart() {
       this.working = true;
@@ -273,8 +315,14 @@ export default {
       }
 
       console.log('before assignJob', selectedFile);
-      const job = await this.assignJob(selectedFile.jobId);
-      console.log('after assignJob', job);
+      const result = await this.assignJob(selectedFile.jobId);
+      console.log('after assignJob', result);
+
+      if (!result.success) {
+        this.handleError(result.error, selectedFile);
+      }
+
+      const { job } = result;
 
       if (!job.file_server) {
         alert('파일서버 정보가 유효하지 않습니다.');
@@ -318,10 +366,16 @@ export default {
         console.log('assignJob payload:', payload);
         const res = await this.$http.post(`/file-server/jobs/${jobId}/assign`, payload);
         console.log('assignJob response:', res);
-        return res.data.data;
+        return {
+          success: true,
+          job: res.data.data,
+        };
       } catch (error) {
-        console.log(error);
-        this.error(getErrorResponse(error).message);
+        console.log('error in assignJob', error);
+        return {
+          success: false,
+          error,
+        };
       }
     },
     async updateProgress(file) {
@@ -349,8 +403,8 @@ export default {
         const res = await this.$http.post(`/file-server/jobs/${file.jobId}/update-status`, payload);
         console.log('updateProgress response:', res);
       } catch (error) {
-        console.log(error);
-        this.error(getErrorResponse(error).message);
+        console.log('error in updateProgress', error);
+        this.handleError(error, file);
       }
     },
     retryTransfer() {

@@ -10,5 +10,7 @@ module.exports = {
     LOAD_CONFIG: 'load_config',
     RUN_FILE: 'run_file',
     OPEN_FOLDER: 'open_folder',
+    INIT_DEV_TOOL: 'init_dev_tool',
+    SET_CONFIG: 'set_config',
   },
 };

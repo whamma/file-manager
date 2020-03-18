@@ -2,7 +2,7 @@
   <v-dialog v-model="dialog" persistent max-width="550px">
     <template v-slot:activator="{ on }">
       <v-btn v-on="on" :disabled="disabled" icon>
-        <v-icon>mdi-settings</v-icon>
+        <v-icon>mdi-tune</v-icon>
       </v-btn>
     </template>
 
@@ -55,6 +55,7 @@ export default {
   },
   updated() {
     if (this.downloadDir === '') {
+      //console.log('updated', this.$store.state);
       this.downloadDir = this.$store.state.config.downloadDir;
     }
   },
@@ -83,10 +84,9 @@ export default {
     onSaveClick() {
       this.$store.state.config.downloadDir = this.downloadDir;
       this.$store.dispatch('setConfig', this.$store.state.config);
+      ipcRenderer.send(channels.SAVE_CONFIG, this.$store.state.config);
       this.dialog = false;
     },
   },
 };
 </script>
-
-<style scoped></style>

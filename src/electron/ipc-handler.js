@@ -1,7 +1,7 @@
 import { channels } from '../shared/constants';
 import { openFile, openDirectory } from './open-dialogs';
-import { uploadFtp, downloadFtp, abort } from './transfer';
-import { saveDownloadDir, loadDownloadDir } from './config';
+import { uploadFtp, downloadFtp, abort } from './transfer-sftp';
+import { saveDownloadDir } from './config';
 import { shell } from 'electron';
 
 import logger from 'electron-log';
@@ -52,7 +52,7 @@ export const configure = ({ ipcMain, app, win }) => {
         remoteFile = file.remoteFileName;
       }
       file.remoteFilePath = remoteFile;
-      logger.debug('upload file', file);
+      logger.debug('upload file', makeFileObjForLogging(file));
       result = await uploadFtp({
         host,
         port,
@@ -83,7 +83,7 @@ export const configure = ({ ipcMain, app, win }) => {
         let localFile = path.join(file.downloadDir, `${file.fileName}`).replace(/\\/gi, '/');
         file.filePath = localFile;
       }
-      logger.debug('download file', file);
+      logger.debug('download file', makeFileObjForLogging(file));
       result = await downloadFtp({
         host,
         port,
@@ -102,7 +102,8 @@ export const configure = ({ ipcMain, app, win }) => {
       });
     }
 
-    console.log('download finished', file);
+    console.log('transfer finished', makeFileObjForLogging(file));
+    console.log('FTP result', result);
 
     if (result.success) {
       file.status = 'finished';
@@ -112,6 +113,8 @@ export const configure = ({ ipcMain, app, win }) => {
       file.status = 'error';
       file.errors = result.errors;
     }
+
+    console.log('channels.TRANSFER_FILE', makeFileObjForLogging(file));
     event.sender.send(channels.TRANSFER_FILE, file);
   });
 
@@ -138,10 +141,6 @@ export const configure = ({ ipcMain, app, win }) => {
     saveDownloadDir(config.downloadDir);
   });
 
-  ipcMain.on(channels.LOAD_CONFIG, (event, config) => {
-    loadDownloadDir(config.downloadDir);
-  });
-
   ipcMain.on(channels.TRANSFER_FILE_ABORT, async () => {
     try {
       await abort();
@@ -157,7 +156,22 @@ export const configure = ({ ipcMain, app, win }) => {
   ipcMain.on(channels.OPEN_FOLDER, async (event, file) => {
     await shell.showItemInFolder(file.filePath);
   });
+
+  /**
+   * 개발자 도구 활성화
+   */
+  ipcMain.on(channels.INIT_DEV_TOOL, () => {
+    win.webContents.openDevTools();
+  });
 };
+
+/**
+ *
+ * @param {object} file 로그를 쓸때 사용하기위한 업로드/다운로드 서버 사용자 아이디와 비밀번호를 제거한 파일 객체를 반환
+ */
+function makeFileObjForLogging(file) {
+  return { ...file, server: { ...file.server, username: null, pw: null } };
+}
 
 export const selectFile = async ({ win }) => {
   const result = await openFile({
