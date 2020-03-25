@@ -141,9 +141,14 @@ export const configure = ({ ipcMain, app, win }) => {
     saveDownloadDir(config.downloadDir);
   });
 
-  ipcMain.on(channels.TRANSFER_FILE_ABORT, async () => {
+  ipcMain.on(channels.TRANSFER_FILE_ABORT, async (event, file) => {
     try {
-      await abort();
+      const result = await abort();
+      if (result && result.aborted) {
+        file.status = 'canceled';
+        console.log('channels.TRANSFER_FILE_ABORT', makeFileObjForLogging(file));
+        event.sender.send(channels.TRANSFER_FILE, file);
+      }
     } catch (error) {
       console.log('trasnfer file abort exception:', error);
     }

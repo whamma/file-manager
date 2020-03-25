@@ -10,7 +10,7 @@ export const openFile = async ({ ownerWin, defaultPath }) => {
 
     // See place holder 4 in above image
     filters: [
-      { name: '동영상', extensions: ['mxf', 'mp4'] },
+      { name: '동영상', extensions: ['mxf', 'mp4', 'mov'] },
       { name: '사진', extensions: ['jpg', 'png', 'gif'] },
       { name: '모든 파일', extensions: ['*'] },
     ],

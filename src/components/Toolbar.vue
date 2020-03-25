@@ -94,6 +94,7 @@ export default {
     return {
       working: false,
       lastStatusUpdated: null,
+      workingFile: null,
     };
   },
   computed: {
@@ -238,6 +239,7 @@ export default {
 
       // 파일 전송 시
       ipcRenderer.on(channels.TRANSFER_FILE, async (event, file) => {
+        this.workingFile = file;
         file.progress = Math.round((file.transferred / file.filesize) * 100);
 
         // console.log('before updateFile on TRANSFER_FILE', file);
@@ -347,7 +349,7 @@ export default {
       if (!this.working) {
         return;
       }
-      ipcRenderer.send(channels.TRANSFER_FILE_ABORT);
+      ipcRenderer.send(channels.TRANSFER_FILE_ABORT, this.workingFile);
     },
     findFile(jobId) {
       return this.$store.state.files.find(file => file.jobId === jobId);

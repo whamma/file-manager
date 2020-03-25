@@ -7,7 +7,12 @@ let abortRequested = false;
 
 export const abort = async () => {
   abortRequested = true;
-  sftp.end();
+  await sftp.end();
+  return {
+    success: false,
+    aborted: true,
+    errors: null,
+  };
 };
 
 export const uploadFtp = async ({
@@ -27,9 +32,6 @@ export const uploadFtp = async ({
   abortRequested = false;
   sftp = new SftpClient();
   try {
-    host = '192.168.142.1';
-    port = 2222;
-
     logger.debug('before access uploadFtp');
     logger.debug('access server uploadFtp', {
       host,
@@ -45,16 +47,6 @@ export const uploadFtp = async ({
     });
 
     logger.debug('after access uploadFtp');
-
-    // sftp.on('upload', info => {
-    //   console.log('info', info.source);
-    //   if (progressCallback !== null) {
-    //     // progressCallback({
-    //     //   bytes: info.bytes,
-    //     //   bytesOverall: info.bytesOverall,
-    //     // });
-    //   }
-    // });
 
     logger.debug('before uploadFrom');
     logger.debug('localFile uploadFtp', localFile);
@@ -122,9 +114,6 @@ export const downloadFtp = async ({
   abortRequested = false;
   sftp = new SftpClient(10000);
   try {
-    host = '192.168.142.1';
-    port = 2222;
-
     logger.debug('before access downloadFtp');
     logger.debug('access server downloadFtp', {
       host,
