@@ -166,7 +166,7 @@ app.on('ready', async () => {
     // 다운로드
     //args.push(`${PROTOCOL}://?job_id=2145`);
   }
-  args.push(`${PROTOCOL}://?job_id=2145`);
+  //args.push(`${PROTOCOL}://?job_id=2145`);
 
   console.log('args', args);
 

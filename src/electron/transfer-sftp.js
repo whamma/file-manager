@@ -51,32 +51,21 @@ export const uploadFtp = async ({
     logger.debug('before uploadFrom');
     logger.debug('localFile uploadFtp', localFile);
     logger.debug('remoteFile uploadFtp', remoteFile);
-    const localFileStream = fs.createReadStream(localFile);
-    let bytesOverall = 0;
+
     let lastUpdatedAt = new Date();
-    localFileStream.on('data', chunk => {
-      if (progressCallback !== null) {
-        bytesOverall += chunk.length;
-        if (new Date() - lastUpdatedAt > 200) {
-          progressCallback({
-            bytes: bytesOverall,
-            bytesOverall,
-          });
-          lastUpdatedAt = new Date();
+    await sftp.fastPut(localFile, remoteFile, {
+      step: (bytesOverall, chunk, totalSize) => {
+        if (progressCallback !== null) {
+          if (new Date() - lastUpdatedAt > 200 || bytesOverall === totalSize) {
+            progressCallback({
+              bytes: bytesOverall,
+              bytesOverall,
+            });
+            lastUpdatedAt = new Date();
+          }
         }
-      }
+      },
     });
-
-    localFileStream.on('end', () => {
-      if (progressCallback !== null) {
-        progressCallback({
-          bytes: bytesOverall,
-          bytesOverall,
-        });
-      }
-    });
-
-    await sftp.put(localFileStream, remoteFile);
     logger.debug('after uploadFrom');
 
     result.success = true;
@@ -141,7 +130,6 @@ export const downloadFtp = async ({
       return result;
     }
 
-    let bytesOverall = 0;
     let lastUpdatedAt = new Date();
     await sftp.fastGet(remoteFile, localFile, {
       step: (bytesOverall, chunk, totalSize) => {
