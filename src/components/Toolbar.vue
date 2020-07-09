@@ -125,12 +125,15 @@ export default {
       //console.log(error);
       console.log('error.response', error.response);
       console.log('error.code', error.code);
-      return;
-      /*
+      console.log('file', file);
+      
       let message = getErrorResponse(error).message;
       if (error.code === 'ECONNABORTED') {
         message = '서버에 접속할 수 없습니다.';
       }
+      console.log('message', message);
+      /*
+      return;
 
       if (file) {
         file.status = 'error';
