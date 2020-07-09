@@ -251,7 +251,7 @@ export default {
         } else if (file.status === 'error') {
           this.working = false;
           console.log(file.errors);
-          this.handleError(new Error(file.errors), file);
+          // this.handleError(new Error(file.errors), file);
           await this.updateProgress(file);
         } else if (file.status === 'canceled') {
           this.working = false;
