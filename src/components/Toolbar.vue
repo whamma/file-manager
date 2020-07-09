@@ -125,6 +125,8 @@ export default {
       //console.log(error);
       console.log('error.response', error.response);
       console.log('error.code', error.code);
+      return;
+      /*
       let message = getErrorResponse(error).message;
       if (error.code === 'ECONNABORTED') {
         message = '서버에 접속할 수 없습니다.';
@@ -137,6 +139,7 @@ export default {
       this.setAlert({ type: 'error', message });
 
       throw error;
+      */
     },
     warning(message) {
       this.setAlert({ type: 'warning', message });
