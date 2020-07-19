@@ -20,7 +20,7 @@
     "electron-debug": "^3.0.1",
     "electron-log": "^4.0.2",
     "electron-store": "^5.1.0",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "sanitize-filename": "^1.6.3",
     "ssh2-sftp-client": "^5.2.1",
     "url-parse": "^1.4.7",
