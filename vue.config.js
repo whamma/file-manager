@@ -23,6 +23,7 @@ module.exports = {
           category: 'public.app-category.business',
           icon: './src/assets/icon.icns',
           target: ['default'],
+          identity: null,
         },
         protocols: [
           {
