@@ -101,7 +101,7 @@ export const downloadFtp = async ({
     errors: null,
   };
   abortRequested = false;
-  sftp = new SftpClient(10000);
+  sftp = new SftpClient();
   try {
     logger.debug('before access downloadFtp');
     logger.debug('access server downloadFtp', {
@@ -130,20 +130,24 @@ export const downloadFtp = async ({
       return result;
     }
 
-    let lastUpdatedAt = new Date();
-    await sftp.fastGet(remoteFile, localFile, {
-      step: (bytesOverall, chunk, totalSize) => {
-        if (progressCallback !== null) {
-          if (new Date() - lastUpdatedAt > 200 || bytesOverall === totalSize) {
-            progressCallback({
-              bytes: bytesOverall,
-              bytesOverall,
-            });
-            lastUpdatedAt = new Date();
-          }
-        }
-      },
-    });
+    // let lastUpdatedAt = new Date();
+    // await sftp.fastGet(remoteFile, localFile, {
+    //   step: (bytesOverall, chunk, totalSize) => {
+    //     if (progressCallback !== null) {
+    //       if (new Date() - lastUpdatedAt > 500 || bytesOverall === totalSize) {
+    //         progressCallback({
+    //           bytes: bytesOverall,
+    //           bytesOverall,
+    //         });
+    //         lastUpdatedAt = new Date();
+    //       }
+    //     }
+    //   },
+    // });
+
+    let fileWtr = fs.createWriteStream(localFile);
+    await sftp.get(remoteFile, fileWtr);
+
     logger.debug('after downloadTo');
 
     result.success = true;

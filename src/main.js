@@ -7,7 +7,6 @@ import axios from 'axios';
 
 const base = axios.create({
   baseURL: 'https://nps.ktv.go.kr/api/v1',
-  timeout: 15000,
   headers: { 'X-API-KEY': 'B+Hqhy*3GEuJJmk%' },
 });
 

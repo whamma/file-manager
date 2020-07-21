@@ -406,7 +406,7 @@ export default {
         console.log('updateProgress response:', res);
       } catch (error) {
         console.log('error in updateProgress', error);
-        this.handleError(error, file);
+        //this.handleError(error, file);
       }
     },
     retryTransfer() {
