@@ -9,7 +9,7 @@ export const abort = async () => {
   client.close();
 };
 
-export const uploadFtp = async ({
+export const upload = async ({
   host,
   port,
   user,
@@ -33,6 +33,8 @@ export const uploadFtp = async ({
       user,
       password,
     });
+
+    port = 2121;
 
     await client.access({
       host,
@@ -76,7 +78,7 @@ export const uploadFtp = async ({
   return result;
 };
 
-export const downloadFtp = async ({
+export const download = async ({
   host,
   port,
   user,
@@ -100,6 +102,8 @@ export const downloadFtp = async ({
       user,
       password,
     });
+
+    port = 2121;
 
     await client.access({
       host,

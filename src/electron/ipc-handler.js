@@ -1,6 +1,6 @@
 import { channels } from '../shared/constants';
 import { openFile, openDirectory } from './open-dialogs';
-import { uploadFtp, downloadFtp, abort } from './transfer-sftp';
+import { upload, download, abort } from './transfer-ftp';
 import { saveDownloadDir } from './config';
 import { shell } from 'electron';
 
@@ -53,7 +53,7 @@ export const configure = ({ ipcMain, app, win }) => {
       }
       file.remoteFilePath = remoteFile;
       logger.debug('upload file', makeFileObjForLogging(file));
-      result = await uploadFtp({
+      result = await upload({
         host,
         port,
         user,
@@ -84,7 +84,7 @@ export const configure = ({ ipcMain, app, win }) => {
         file.filePath = localFile;
       }
       logger.debug('download file', makeFileObjForLogging(file));
-      result = await downloadFtp({
+      result = await download({
         host,
         port,
         user,
@@ -175,7 +175,14 @@ export const configure = ({ ipcMain, app, win }) => {
  * @param {object} file 로그를 쓸때 사용하기위한 업로드/다운로드 서버 사용자 아이디와 비밀번호를 제거한 파일 객체를 반환
  */
 function makeFileObjForLogging(file) {
-  return { ...file, server: { ...file.server, username: null, pw: null } };
+  return {
+    ...file,
+    server: {
+      ...file.server,
+      username: null,
+      pw: null,
+    },
+  };
 }
 
 export const selectFile = async ({ win }) => {

@@ -15,7 +15,7 @@ export const abort = async () => {
   };
 };
 
-export const uploadFtp = async ({
+export const upload = async ({
   host,
   port,
   user,
@@ -86,14 +86,13 @@ export const uploadFtp = async ({
   return result;
 };
 
-export const downloadFtp = async ({
+export const download = async ({
   host,
   port,
   user,
   password,
   localFile,
-  remoteFile,
-  progressCallback,
+  remoteFile
 }) => {
   const result = {
     success: false,
