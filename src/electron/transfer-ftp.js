@@ -24,7 +24,7 @@ export const upload = async ({
     errors: null,
   };
   abortRequested = false;
-  client = new ftp.Client(10000);
+  client = new ftp.Client();
   try {
     logger.debug('before access uploadFtp');
     logger.debug('access server uploadFtp', {
@@ -93,7 +93,7 @@ export const download = async ({
     errors: null,
   };
   abortRequested = false;
-  client = new ftp.Client(10000);
+  client = new ftp.Client();
   try {
     logger.debug('before access downloadFtp');
     logger.debug('access server downloadFtp', {

@@ -1,0 +1,4 @@
+{
+	"downloadDir": "C:\\Users", 
+    "isDevelopment": true
+}

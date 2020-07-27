@@ -89,6 +89,20 @@ export default {
       this.$store.dispatch('updateFile', file);
       this.onClickStart();
     });
+
+    setInterval(() => {
+      if (this.working) {
+        return;
+      }
+      const errorFile = this.selectErrorFile();
+      if(errorFile === undefined || errorFile === null) {
+        return;
+      }
+      errorFile.status = 'queued';
+      this.$store.dispatch('updateFile', errorFile);
+      this.onClickStart();
+
+    }, 1000);
   },
   data() {
     return {
@@ -163,10 +177,11 @@ export default {
       } catch (error) {
         console.log('error in getJob', error);
         if (is404(error)) {
-          this.handleError(new Error(`작업을 서버에서 찾을 수 없습니다. (${jobId})`));
+          //this.handleError(new Error(`작업을 서버에서 찾을 수 없습니다. (${jobId})`));
         } else {
-          this.handleError(error);
+          //this.handleError(error);
         }
+        return null;
       }
     },
     listenIpcEvents() {
@@ -179,7 +194,18 @@ export default {
           return;
         }
         // 1. 서버에서 작업을 조회한 후
-        const job = await this.getJob(jobInfo.jobId);
+        let retryCount = 0;
+        let job = null;
+        while(retryCount < 10) {
+          console.log('before getJob', jobInfo);
+          console.log('retryCount', retryCount);
+          job = await this.getJob(jobInfo.jobId);
+          console.log('after getJob', job);
+          if (job !== null) {
+            break;
+          }
+
+        }
         const file = {
           jobId: job.id,
           type: job.type,
@@ -252,7 +278,17 @@ export default {
         this.$store.dispatch('updateFile', file);
 
         if (file.status === 'finished') {
-          await this.updateProgress(file);
+          let retryCount = 0;
+          while(retryCount < 10) {
+            console.log('before update finished', file);
+            console.log('retryCount', retryCount);
+            let result = await this.updateProgress(file);
+            console.log('after update finished. result : ', result);
+            if(result) {
+              break;
+            }
+          }
+          
           await this.onClickStart();
         } else if (file.status === 'error') {
           this.working = false;
@@ -322,10 +358,17 @@ export default {
         return;
       }
 
-      console.log('before assignJob', selectedFile);
-      const result = await this.assignJob(selectedFile.jobId);
-      console.log('after assignJob', result);
-
+      let retryCount = 0;
+      let result = null;
+      while(retryCount < 10) {
+        console.log('before assignJob', selectedFile);
+        console.log('retryCount', retryCount);
+        result = await this.assignJob(selectedFile.jobId);
+        console.log('after assignJob', result);
+        if (result.success) {
+          break;
+        }
+      }
       if (!result.success) {
         this.handleError(result.error, selectedFile);
       }
@@ -363,6 +406,10 @@ export default {
     selectTransferFile() {
       // 준비완료 된 파일만 전송 가능
       return this.$store.state.files.find(file => file.status === 'queued');
+    },
+    selectErrorFile() {
+      // 에러가 발생한 파일 찾기
+      return this.$store.state.files.find(file => file.status === 'error');
     },
     async assignJob(jobId) {
       //작업 할당 시 client_os, client_ver 제공해야 함
@@ -410,9 +457,11 @@ export default {
 
         const res = await this.$http.post(`/file-server/jobs/${file.jobId}/update-status`, payload);
         console.log('updateProgress response:', res);
+        return true;
       } catch (error) {
         console.log('error in updateProgress', error);
         //this.handleError(error, file);
+        return false;
       }
     },
     retryTransfer() {
